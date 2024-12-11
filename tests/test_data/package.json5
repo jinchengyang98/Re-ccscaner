@@ -1,0 +1,10 @@
+{
+    name: 'acme-gadgets',
+    version: '4.3.6',
+    namespace: 'acme',
+    depends: {
+        'acme-widgets': '^1.4.3',
+        'acme-gizmos': '~5.6.5',
+        'acme-utils': '^3.3.0',
+    },
+}

@@ -1,0 +1,5 @@
+json5==0.9.9
+bs4==0.0.1
+GitPython
+lxml
+requests

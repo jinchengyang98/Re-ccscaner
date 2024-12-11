@@ -1,0 +1,5 @@
+include README_pip.md
+
+include *.txt
+recursive-include ccscanner *.txt *.py LICENSE
+prune examples/sample?/build
