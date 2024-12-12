@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>开始扫描 - CCScanner</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-search"></i> CCScanner
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/scan">
+                            <i class="fas fa-play"></i> 开始扫描
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/results">
+                            <i class="fas fa-list"></i> 扫描结果
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dependencies">
+                            <i class="fas fa-project-diagram"></i> 依赖分析
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/vulnerabilities">
+                            <i class="fas fa-shield-alt"></i> 漏洞检测
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容 -->
+    <div class="container mt-4">
+        <!-- 扫描配置 -->
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-cog"></i> 扫描配置
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="scanForm">
+                            <!-- 项目路径 -->
+                            <div class="mb-3">
+                                <label for="path" class="form-label">项目路径</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="path" name="path" required>
+                                    <button class="btn btn-outline-secondary" type="button" id="browsePath">
+                                        <i class="fas fa-folder-open"></i> 浏览
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 提取器选择 -->
+                            <div class="mb-3">
+                                <label class="form-label">选择提取器</label>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="extractors" value="cmake" id="cmake">
+                                            <label class="form-check-label" for="cmake">CMake</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="extractors" value="make" id="make">
+                                            <label class="form-check-label" for="make">Make</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="extractors" value="bazel" id="bazel">
+                                            <label class="form-check-label" for="bazel">Bazel</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="extractors" value="gradle" id="gradle">
+                                            <label class="form-check-label" for="gradle">Gradle</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="extractors" value="maven" id="maven">
+                                            <label class="form-check-label" for="maven">Maven</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="extractors" value="npm" id="npm">
+                                            <label class="form-check-label" for="npm">NPM</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="extractors" value="cargo" id="cargo">
+                                            <label class="form-check-label" for="cargo">Cargo</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="extractors" value="poetry" id="poetry">
+                                            <label class="form-check-label" for="poetry">Poetry</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="extractors" value="composer" id="composer">
+                                            <label class="form-check-label" for="composer">Composer</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 高级选项 -->
+                            <div class="mb-3">
+                                <div class="accordion" id="advancedOptions">
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header">
+                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#advancedOptionsContent">
+                                                高级选项
+                                            </button>
+                                        </h2>
+                                        <div id="advancedOptionsContent" class="accordion-collapse collapse">
+                                            <div class="accordion-body">
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input" type="checkbox" id="ignoreTests" name="options.ignoreTests">
+                                                    <label class="form-check-label" for="ignoreTests">
+                                                        忽略测试文件
+                                                    </label>
+                                                </div>
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input" type="checkbox" id="includeDevDeps" name="options.includeDevDeps">
+                                                    <label class="form-check-label" for="includeDevDeps">
+                                                        包含开发依赖
+                                                    </label>
+                                                </div>
+                                                <div class="mb-2">
+                                                    <label for="maxDepth" class="form-label">最大深度</label>
+                                                    <input type="number" class="form-control" id="maxDepth" name="options.maxDepth" value="10">
+                                                </div>
+                                                <div class="mb-2">
+                                                    <label for="excludeFiles" class="form-label">排除文件</label>
+                                                    <input type="text" class="form-control" id="excludeFiles" name="options.excludeFiles" placeholder="使用逗号分隔">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 提交按钮 -->
+                            <div class="text-end">
+                                <button type="submit" class="btn btn-primary" id="startScan">
+                                    <i class="fas fa-play"></i> 开始扫描
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 扫描状态 -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-tasks"></i> 扫描状态
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="scanStatus" style="display: none;">
+                            <!-- 进度条 -->
+                            <div class="mb-3">
+                                <label class="form-label">扫描进度</label>
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%" id="scanProgress"></div>
+                                </div>
+                                <small class="text-muted" id="scanProgressText">0%</small>
+                            </div>
+
+                            <!-- 状态信息 -->
+                            <div class="mb-3">
+                                <label class="form-label">当前状态</label>
+                                <div class="alert alert-info" id="scanStatusText">
+                                    准备开始扫描...
+                                </div>
+                            </div>
+
+                            <!-- 统计信息 -->
+                            <div class="mb-3">
+                                <label class="form-label">实时统计</label>
+                                <ul class="list-group">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        发现依赖
+                                        <span class="badge bg-primary rounded-pill" id="foundDeps">0</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        版本冲突
+                                        <span class="badge bg-warning rounded-pill" id="foundConflicts">0</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        发现漏洞
+                                        <span class="badge bg-danger rounded-pill" id="foundVulns">0</span>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <!-- 操作按钮 -->
+                            <div class="text-center">
+                                <button class="btn btn-danger" id="stopScan">
+                                    <i class="fas fa-stop"></i> 停止扫描
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 空闲状态提示 -->
+                        <div id="idleStatus">
+                            <div class="text-center text-muted">
+                                <i class="fas fa-hourglass-start fa-3x mb-3"></i>
+                                <p>等待开始扫描...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 实时日志 -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-terminal"></i> 实时日志
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="bg-dark text-light p-3 rounded" style="height: 200px; overflow-y: auto;">
+                            <pre id="scanLogs" class="mb-0"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="footer mt-4 py-3 bg-light">
+        <div class="container text-center">
+            <span class="text-muted">Copyright © 2024 CCScanner. All rights reserved.</span>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/scan.js"></script>
+</body>
+</html>
+
+<!-- 注意事项:
+1. 实现文件路径选择
+2. 支持多个提取器选择
+3. 提供高级配置选项
+4. 显示实时扫描进度
+5. 实现WebSocket实时更新 --> 

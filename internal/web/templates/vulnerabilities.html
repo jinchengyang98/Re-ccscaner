@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>漏洞检测 - CCScanner</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-search"></i> CCScanner
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/scan">
+                            <i class="fas fa-play"></i> 开始扫描
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/results">
+                            <i class="fas fa-list"></i> 扫描结果
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dependencies">
+                            <i class="fas fa-project-diagram"></i> 依赖分析
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/vulnerabilities">
+                            <i class="fas fa-shield-alt"></i> 漏洞检测
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容 -->
+    <div class="container mt-4">
+        <!-- 漏洞摘要 -->
+        <div class="row">
+            <!-- 统计卡片 -->
+            <div class="col-md-3">
+                <div class="card text-white bg-danger mb-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">高危漏洞</h6>
+                                <h2 class="mb-0" id="highVulnsCount">0</h2>
+                            </div>
+                            <i class="fas fa-exclamation-triangle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-warning mb-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">中危漏洞</h6>
+                                <h2 class="mb-0" id="mediumVulnsCount">0</h2>
+                            </div>
+                            <i class="fas fa-exclamation-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-info mb-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">低危漏洞</h6>
+                                <h2 class="mb-0" id="lowVulnsCount">0</h2>
+                            </div>
+                            <i class="fas fa-info-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-success mb-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">已修复</h6>
+                                <h2 class="mb-0" id="fixedVulnsCount">0</h2>
+                            </div>
+                            <i class="fas fa-check-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 漏洞分布 -->
+        <div class="row">
+            <!-- 漏洞类型分布 -->
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-chart-pie"></i> 漏洞类型分布
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="vulnTypeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 受影响组件分布 -->
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-chart-bar"></i> 受影响组件分布
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="affectedComponentsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 漏洞列表 -->
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-list"></i> 漏洞列表
+                    </h5>
+                    <div class="btn-group">
+                        <button class="btn btn-outline-primary" id="exportReport">
+                            <i class="fas fa-file-export"></i> 导出报告
+                        </button>
+                        <button class="btn btn-outline-success" id="batchFix">
+                            <i class="fas fa-wrench"></i> 批量修复
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- 过滤器 -->
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <input type="text" class="form-control" id="searchVulns" placeholder="搜索漏洞...">
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select" id="severityFilter">
+                            <option value="">所有严重程度</option>
+                            <option value="high">高危</option>
+                            <option value="medium">中危</option>
+                            <option value="low">低危</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select" id="statusFilter">
+                            <option value="">所有状态</option>
+                            <option value="open">未修复</option>
+                            <option value="fixed">已修复</option>
+                            <option value="ignored">已忽略</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select" id="typeFilter">
+                            <option value="">所有类型</option>
+                            <option value="cve">CVE</option>
+                            <option value="cwe">CWE</option>
+                            <option value="other">其他</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="btn-group w-100">
+                            <button class="btn btn-outline-secondary" id="clearFilters">
+                                <i class="fas fa-times"></i> 清除过滤
+                            </button>
+                            <button class="btn btn-outline-primary" id="applyFilters">
+                                <i class="fas fa-filter"></i> 应用过滤
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 漏洞表格 -->
+                <div class="table-responsive">
+                    <table class="table table-hover" id="vulnsTable">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <input type="checkbox" id="selectAll">
+                                </th>
+                                <th>ID</th>
+                                <th>组件</th>
+                                <th>版本</th>
+                                <th>严重程度</th>
+                                <th>描述</th>
+                                <th>状态</th>
+                                <th>修复建议</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 动态填充 -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 分页 -->
+                <nav>
+                    <ul class="pagination justify-content-center" id="vulnsPagination">
+                        <!-- 动态填充 -->
+                    </ul>
+                </nav>
+            </div>
+        </div>
+
+        <!-- 漏洞详情模态框 -->
+        <div class="modal fade" id="vulnDetailsModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">漏洞详情</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <!-- 基本信息 -->
+                            <div class="col-md-6">
+                                <h6>基本信息</h6>
+                                <table class="table table-sm">
+                                    <tbody>
+                                        <tr>
+                                            <th>漏洞ID:</th>
+                                            <td id="vulnId"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>CVE:</th>
+                                            <td id="vulnCVE"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>CWE:</th>
+                                            <td id="vulnCWE"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>发现时间:</th>
+                                            <td id="vulnDiscovered"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>修复状态:</th>
+                                            <td id="vulnStatus"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- 受影响组件 -->
+                            <div class="col-md-6">
+                                <h6>受影响组件</h6>
+                                <table class="table table-sm">
+                                    <tbody>
+                                        <tr>
+                                            <th>组件名称:</th>
+                                            <td id="vulnComponent"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>当前版本:</th>
+                                            <td id="vulnVersion"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>修复版本:</th>
+                                            <td id="vulnFixedVersion"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>依赖类型:</th>
+                                            <td id="vulnDepType"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>依赖路径:</th>
+                                            <td id="vulnDepPath"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- 漏洞描述 -->
+                            <div class="col-12 mt-3">
+                                <h6>漏洞描述</h6>
+                                <div class="alert alert-secondary" id="vulnDescription"></div>
+                            </div>
+
+                            <!-- 修复建议 -->
+                            <div class="col-12 mt-3">
+                                <h6>修复建议</h6>
+                                <div class="alert alert-info" id="vulnRemediation"></div>
+                            </div>
+
+                            <!-- 参考链接 -->
+                            <div class="col-12 mt-3">
+                                <h6>参考链接</h6>
+                                <ul class="list-unstyled" id="vulnReferences">
+                                    <!-- 动态填充 -->
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                        <button type="button" class="btn btn-success" id="fixVuln">修复漏洞</button>
+                        <button type="button" class="btn btn-warning" id="ignoreVuln">忽略漏洞</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="footer mt-4 py-3 bg-light">
+        <div class="container text-center">
+            <span class="text-muted">Copyright © 2024 CCScanner. All rights reserved.</span>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/static/js/vulnerabilities.js"></script>
+</body>
+</html>
+
+<!-- 注意事项:
+1. 使用Chart.js绘制统计图表
+2. 实现漏洞过滤和搜索
+3. 支持批量操作功能
+4. 提供详细的漏洞信息
+5. 实现漏洞修复流程 --> 

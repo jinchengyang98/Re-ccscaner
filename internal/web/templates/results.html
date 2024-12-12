@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>扫描结果 - CCScanner</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-search"></i> CCScanner
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/scan">
+                            <i class="fas fa-play"></i> 开始扫描
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/results">
+                            <i class="fas fa-list"></i> 扫描结果
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dependencies">
+                            <i class="fas fa-project-diagram"></i> 依赖分析
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/vulnerabilities">
+                            <i class="fas fa-shield-alt"></i> 漏洞检测
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容 -->
+    <div class="container mt-4">
+        <!-- 结果摘要 -->
+        <div class="row">
+            <!-- 基本信息 -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-info-circle"></i> 基本信息
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr>
+                                    <th>扫描ID:</th>
+                                    <td id="scanId"></td>
+                                </tr>
+                                <tr>
+                                    <th>项目路径:</th>
+                                    <td id="projectPath"></td>
+                                </tr>
+                                <tr>
+                                    <th>开始时间:</th>
+                                    <td id="startTime"></td>
+                                </tr>
+                                <tr>
+                                    <th>结束时间:</th>
+                                    <td id="endTime"></td>
+                                </tr>
+                                <tr>
+                                    <th>耗时:</th>
+                                    <td id="duration"></td>
+                                </tr>
+                                <tr>
+                                    <th>状态:</th>
+                                    <td><span class="badge bg-success" id="status">完成</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 统计信息 -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-chart-pie"></i> 统计信息
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <div class="text-center">
+                                    <h3 id="totalDeps">0</h3>
+                                    <p>总依赖数</p>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <div class="text-center">
+                                    <h3 id="directDeps">0</h3>
+                                    <p>直接依赖</p>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-center">
+                                    <h3 id="totalVulns">0</h3>
+                                    <p>发现漏洞</p>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-center">
+                                    <h3 id="totalConflicts">0</h3>
+                                    <p>版本冲突</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 图表展示 -->
+        <div class="row mt-4">
+            <!-- 依赖类型分布 -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-chart-bar"></i> 依赖类型分布
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="depTypeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 漏洞严重程度分布 -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-chart-pie"></i> 漏洞严重程度分布
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="vulnSeverityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 详细信息 -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <!-- 选项卡 -->
+                <ul class="nav nav-tabs" id="resultTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="dependencies-tab" data-bs-toggle="tab" data-bs-target="#dependencies" type="button">
+                            <i class="fas fa-cubes"></i> 依赖列表
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="vulnerabilities-tab" data-bs-toggle="tab" data-bs-target="#vulnerabilities" type="button">
+                            <i class="fas fa-bug"></i> 漏洞列表
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="conflicts-tab" data-bs-toggle="tab" data-bs-target="#conflicts" type="button">
+                            <i class="fas fa-exclamation-triangle"></i> 版本冲突
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- 选项卡内容 -->
+                <div class="tab-content" id="resultTabsContent">
+                    <!-- 依赖列表 -->
+                    <div class="tab-pane fade show active" id="dependencies">
+                        <div class="card border-top-0">
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover" id="depsTable">
+                                        <thead>
+                                            <tr>
+                                                <th>名称</th>
+                                                <th>版本</th>
+                                                <th>类型</th>
+                                                <th>来源</th>
+                                                <th>许可证</th>
+                                                <th>操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- 动态填充 -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 漏洞列表 -->
+                    <div class="tab-pane fade" id="vulnerabilities">
+                        <div class="card border-top-0">
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover" id="vulnsTable">
+                                        <thead>
+                                            <tr>
+                                                <th>依赖</th>
+                                                <th>漏洞ID</th>
+                                                <th>严重程度</th>
+                                                <th>描述</th>
+                                                <th>修复版本</th>
+                                                <th>操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- 动态填充 -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 版本冲突 -->
+                    <div class="tab-pane fade" id="conflicts">
+                        <div class="card border-top-0">
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover" id="conflictsTable">
+                                        <thead>
+                                            <tr>
+                                                <th>依赖</th>
+                                                <th>当前版本</th>
+                                                <th>冲突版本</th>
+                                                <th>来源</th>
+                                                <th>建议</th>
+                                                <th>操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- 动态填充 -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="row mt-4">
+            <div class="col-12 text-center">
+                <button class="btn btn-primary me-2" id="exportReport">
+                    <i class="fas fa-file-export"></i> 导出报告
+                </button>
+                <button class="btn btn-success me-2" id="generateGraph">
+                    <i class="fas fa-project-diagram"></i> 生成依赖图
+                </button>
+                <button class="btn btn-warning me-2" id="fixVulnerabilities">
+                    <i class="fas fa-wrench"></i> 修复漏洞
+                </button>
+                <button class="btn btn-info" id="updateDeps">
+                    <i class="fas fa-sync"></i> 更新依赖
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="footer mt-4 py-3 bg-light">
+        <div class="container text-center">
+            <span class="text-muted">Copyright © 2024 CCScanner. All rights reserved.</span>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/static/js/results.js"></script>
+</body>
+</html>
+
+<!-- 注意事项:
+1. 使用Chart.js绘制图表
+2. 实现表格排序和过滤
+3. 支持导出报告功能
+4. 提供依赖更新建议
+5. 实现漏洞修复功能 -->
+</rewritten_file> 

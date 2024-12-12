@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CCScanner - C/C++项目依赖扫描工具</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-search"></i> CCScanner
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" data-page="scan">
+                            <i class="fas fa-play"></i> 扫描
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-page="dependencies">
+                            <i class="fas fa-project-diagram"></i> 依赖
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-page="vulnerabilities">
+                            <i class="fas fa-shield-alt"></i> 漏洞
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-page="stats">
+                            <i class="fas fa-chart-bar"></i> 统计
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容 -->
+    <div class="container mt-4">
+        <!-- 扫描页面 -->
+        <div id="scan-page" class="page active">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-play"></i> 开始扫描
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="scan-form">
+                        <div class="mb-3">
+                            <label class="form-label">目标目录</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="directory" required>
+                                <button type="button" class="btn btn-outline-secondary" id="browse-btn">
+                                    <i class="fas fa-folder-open"></i> 浏览
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="enable-cache">
+                                <label class="form-check-label">启用缓存</label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">排除文件</label>
+                            <input type="text" class="form-control" id="exclude-files" placeholder="使用逗号分隔">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">包含文件</label>
+                            <input type="text" class="form-control" id="include-files" placeholder="使用逗号分隔">
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-play"></i> 开始扫描
+                        </button>
+                    </form>
+
+                    <!-- 扫描状态 -->
+                    <div id="scan-status" class="mt-4 d-none">
+                        <h5>扫描状态</h5>
+                        <div class="progress mb-3">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"></div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p>状态: <span id="status-text">运行中</span></p>
+                                <p>开始时间: <span id="start-time"></span></p>
+                                <p>已用时间: <span id="duration"></span></p>
+                            </div>
+                            <div class="col-md-6">
+                                <p>总文件数: <span id="total-files"></span></p>
+                                <p>已扫描文件: <span id="scanned-files"></span></p>
+                                <p>扫描速度: <span id="scan-speed"></span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 依赖页面 -->
+        <div id="dependencies-page" class="page">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-project-diagram"></i> 依赖关系
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- 过滤器 -->
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <select class="form-select" id="dep-type-filter">
+                                <option value="">所有类型</option>
+                                <option value="library">库</option>
+                                <option value="package">包</option>
+                                <option value="module">模块</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="build-system-filter">
+                                <option value="">所有构建系统</option>
+                                <option value="cmake">CMake</option>
+                                <option value="make">Make</option>
+                                <option value="conan">Conan</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="required-filter">
+                                <option value="">所有依赖</option>
+                                <option value="true">必需</option>
+                                <option value="false">可选</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="conflict-filter">
+                                <option value="">所有状态</option>
+                                <option value="true">有冲突</option>
+                                <option value="false">无冲突</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 依赖列表 -->
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>名称</th>
+                                    <th>版本</th>
+                                    <th>类型</th>
+                                    <th>构建系统</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dep-list">
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 依赖图 -->
+                    <div class="mt-4">
+                        <h5>依赖关系图</h5>
+                        <div id="dep-graph" style="height: 600px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 漏洞页面 -->
+        <div id="vulnerabilities-page" class="page">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-shield-alt"></i> 漏洞信息
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- 漏洞摘要 -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card bg-danger text-white">
+                                <div class="card-body">
+                                    <h5 class="card-title">高危漏洞</h5>
+                                    <p class="card-text" id="high-vulns">0</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-dark">
+                                <div class="card-body">
+                                    <h5 class="card-title">中危漏洞</h5>
+                                    <p class="card-text" id="medium-vulns">0</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body">
+                                    <h5 class="card-title">低危漏洞</h5>
+                                    <p class="card-text" id="low-vulns">0</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body">
+                                    <h5 class="card-title">已修复</h5>
+                                    <p class="card-text" id="fixed-vulns">0</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 漏洞列表 -->
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>CVE</th>
+                                    <th>依赖</th>
+                                    <th>严重程度</th>
+                                    <th>描述</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="vuln-list">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 统计页面 -->
+        <div id="stats-page" class="page">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-bar"></i> 统计信息
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- 统计摘要 -->
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">总依赖数</h5>
+                                    <p class="card-text" id="total-deps">0</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">直接依赖</h5>
+                                    <p class="card-text" id="direct-deps">0</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">间接依赖</h5>
+                                    <p class="card-text" id="indirect-deps">0</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 图表 -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>构建系统分布</h5>
+                            <div id="build-system-chart" style="height: 300px;"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>许可证分布</h5>
+                            <div id="license-chart" style="height: 300px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 脚本 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.0/dist/echarts.min.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html> 
